@@ -1,0 +1,135 @@
+erDiagram
+    %% =============================================
+    %% VERSIÓN FINAL SIMPLIFICADA - SCHEMA CORRECTO
+    %% Líderes y TI precargados con login
+    %% =============================================
+    
+    lideres {
+        int id PK
+        varchar nombre "NOT NULL"
+        varchar email "UK, NOT NULL"
+        varchar area_responsable "NOT NULL"
+        varchar password_hash "NOT NULL"
+        boolean activo "DEFAULT true"
+        timestamptz fecha_creacion "DEFAULT NOW()"
+    }
+    
+    personal_ti {
+        int id PK
+        varchar nombre "NOT NULL"
+        varchar email "UK, NOT NULL"
+        varchar especialidad "NOT NULL"
+        varchar password_hash "NOT NULL"
+        boolean activo "DEFAULT true"
+        timestamptz fecha_creacion "DEFAULT NOW()"
+    }
+    
+    usuarios {
+        int id PK
+        varchar nombre "NOT NULL"
+        varchar email "UK, NOT NULL"
+        varchar area "NOT NULL"
+        varchar rol "NOT NULL"
+        varchar estado "DEFAULT 'pendiente', CHECK(pendiente|aprobado|rechazado)"
+        timestamptz fecha_creacion "NOT NULL, DEFAULT NOW()"
+        timestamptz fecha_respuesta "NULL"
+        int lider_solicitante_id "NOT NULL, FK"
+        int aprobado_por_ti_id "NULL, FK"
+        text observaciones_ti "NULL"
+    }
+    
+    permisos_disponibles {
+        int id PK
+        varchar nombre_permiso "NOT NULL"
+        text descripcion "NULL"
+        varchar categoria "NOT NULL"
+        boolean activo "DEFAULT true"
+        timestamptz fecha_creacion "DEFAULT NOW()"
+    }
+    
+    solicitudes_accesos {
+        int id PK
+        int usuario_id "NOT NULL, FK"
+        int permiso_id "NOT NULL, FK"
+        varchar estado "DEFAULT 'pendiente', CHECK(pendiente|aprobado|rechazado)"
+        timestamptz fecha_solicitud "NOT NULL, DEFAULT NOW()"
+        timestamptz fecha_respuesta "NULL"
+        text observaciones_ti "NULL"
+        int lider_solicitante_id "NOT NULL, FK"
+        int procesado_por_ti_id "NULL, FK"
+    }
+    
+    equipos {
+        int id PK
+        varchar tipo "NOT NULL, CHECK(laptop|desktop)"
+        varchar marca "NOT NULL"
+        varchar modelo "NOT NULL"
+        varchar numero_serie "UK, NOT NULL"
+        varchar procesador "NULL"
+        varchar ram "NULL"
+        varchar almacenamiento "NULL"
+        varchar sistema_operativo "NULL"
+        varchar estado "DEFAULT 'disponible', CHECK(disponible|asignado|mantenimiento)"
+        date fecha_adquisicion "NULL"
+        text observaciones "NULL"
+        timestamptz fecha_creacion "DEFAULT NOW()"
+    }
+    
+    solicitudes_equipos {
+        int id PK
+        int usuario_id "NOT NULL, FK"
+        int equipo_id "NOT NULL, FK"
+        varchar estado "DEFAULT 'pendiente', CHECK(pendiente|aprobado|rechazado)"
+        timestamptz fecha_solicitud "NOT NULL, DEFAULT NOW()"
+        timestamptz fecha_respuesta "NULL"
+        text observaciones_ti "NULL"
+        int lider_solicitante_id "NOT NULL, FK"
+        int procesado_por_ti_id "NULL, FK"
+    }
+    
+    historial_asignaciones {
+        int id PK
+        int equipo_id "NOT NULL, FK"
+        int usuario_id "NULL, FK"
+        varchar usuario_nombre "NOT NULL"
+        varchar usuario_email "NOT NULL"
+        varchar accion "NOT NULL, CHECK(asignado|devuelto|mantenimiento|baja)"
+        timestamptz fecha_accion "NOT NULL, DEFAULT NOW()"
+        date fecha_devolucion "NULL"
+        text observaciones "NULL"
+        int ejecutado_por_ti_id "NOT NULL, FK"
+    }
+    
+    %% =============================================
+    %% RELACIONES CON RESTRICCIONES
+    %% =============================================
+    
+    %% LÍDERES - Autenticación y Solicitudes
+    lideres ||--o{ usuarios : "solicita_usuario (FK RESTRICT)"
+    lideres ||--o{ solicitudes_accesos : "solicita_acceso (FK RESTRICT)"
+    lideres ||--o{ solicitudes_equipos : "solicita_equipo (FK RESTRICT)"
+    
+    %% PERSONAL TI - Procesamiento y Ejecución
+    personal_ti ||--o{ usuarios : "aprueba_usuario (FK SET NULL)"
+    personal_ti ||--o{ solicitudes_accesos : "procesa_acceso (FK SET NULL)"
+    personal_ti ||--o{ solicitudes_equipos : "procesa_equipo (FK SET NULL)"
+    personal_ti ||--o{ historial_asignaciones : "ejecuta_accion (FK RESTRICT)"
+    
+    %% USUARIOS - Receptores de Servicios
+    usuarios ||--o{ solicitudes_accesos : "recibe_acceso (FK CASCADE)"
+    usuarios ||--o{ solicitudes_equipos : "recibe_equipo (FK CASCADE)"
+    usuarios ||--o{ historial_asignaciones : "tiene_historial (FK SET NULL)"
+    
+    %% CATÁLOGOS - Permisos y Equipos
+    permisos_disponibles ||--o{ solicitudes_accesos : "es_solicitado (FK RESTRICT)"
+    equipos ||--o{ solicitudes_equipos : "es_solicitado (FK RESTRICT)"
+    equipos ||--o{ historial_asignaciones : "tiene_movimiento (FK RESTRICT)"
+    
+    %% =============================================
+    %% CONSTRAITS ÚNICOS E ÍNDICES
+    %% =============================================
+    %% UNIQUE: lideres.email, personal_ti.email, usuarios.email
+    %% UNIQUE: equipos.numero_serie
+    %% UNIQUE: (usuario_id, permiso_id) en solicitudes_accesos
+    %% UNIQUE: (usuario_id, equipo_id) en solicitudes_equipos
+    %% INDEX: Fechas, estados, FKs para performance

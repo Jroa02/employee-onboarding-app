@@ -1,0 +1,1310 @@
+openapi: 3.0.3
+info:
+  title: Sistema de Gestión de Colaboradores API
+  description: |
+    API REST para gestionar colaboradores, permisos y equipos en una empresa.
+
+    ## Flujo Principal:
+    1. **Líderes** crean solicitudes de usuarios, permisos y equipos
+    2. **Personal TI** aprueba o rechaza las solicitudes
+    3. El sistema mantiene trazabilidad completa de todas las operaciones
+
+    ## Módulos:
+    - 👥 **Usuarios/Colaboradores**: Gestión de empleados
+    - 🔑 **Permisos**: Control de accesos (Slack, Jira, GitHub, etc.)
+    - 💻 **Equipos**: Inventario y asignación de computadores
+    - 📋 **Solicitudes**: Workflow de aprobaciones
+
+  version: 1.0.0
+  contact:
+    name: Equipo de Desarrollo
+    email: dev@empresa.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3001
+    description: Desarrollo local
+  - url: https://produccion/pd/api
+    description: Producción
+
+tags:
+  - name: Líderes
+    description: Gestión de líderes/managers
+  - name: Personal TI
+    description: Gestión del equipo técnico
+  - name: Usuarios
+    description: Gestión de colaboradores/empleados
+  - name: Permisos
+    description: Catálogo y solicitudes de permisos
+  - name: Equipos
+    description: Inventario y asignación de computadores
+  - name: Solicitudes
+    description: Workflow de aprobaciones
+  - name: Historial
+    description: Trazabilidad y auditoría
+
+paths:
+  # =============================================
+  # LÍDERES
+  # =============================================
+
+  # Solicitudes por líder
+  /lideres/{id}/usuarios/solicitudes:
+    get:
+      tags: [Líderes]
+      summary: Obtener todas las solicitudes de usuario de un líder
+      description: Retorna solicitudes de usuarios realizadas por un líder específico
+      parameters:
+        - $ref: "#/components/parameters/ParamsLideresSolicitudes"
+      responses:
+        "200":
+          description: Lista de solicitudes del líder
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RsLideresSolicitudes"
+                required:
+                  - success
+        "400":
+          description: Solicitud mal formada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+  /lideres/{id}/accesos/solicitudes:
+    get:
+      tags: [Líderes]
+      summary: Obtener todas las solicitudes de acceso de un líder
+      description: Retorna solicitudes de accesos realizadas por un líder específico
+      parameters:
+        - $ref: "#/components/parameters/ParamsLideresSolicitudes"
+      responses:
+        "200":
+          description: Lista de solicitudes de acceso del líder
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tipo_solicitud:
+                          type: string
+                          enum: [accesos]
+                          description: Tipo de solicitud (accesos)
+                        solicitud_id:
+                          type: integer
+                          format: int64
+                          description: ID de la solicitud de acceso
+                        usuario_id:
+                          type: integer
+                          format: int64
+                          description: ID del usuario al que se le solicita el acceso
+                        usuario_nombre:
+                          type: string
+                          description: Nombre del usuario al que se le solicita el acceso
+                        usuario_email:
+                          type: string
+                          format: email
+                          description: Email del usuario al que se le solicita el acceso
+                        usuario_area:
+                          type: string
+                          description: Área del usuario al que se le solicita el acceso
+                        usuario_rol:
+                          type: string
+                          description: Rol del usuario al que se le solicita el acceso
+                        permiso_id:
+                          type: integer
+                          format: int64
+                          description: ID del permiso solicitado
+                        nombre_permiso:
+                          type: string
+                          description: Nombre del permiso solicitado
+                        permiso_descripcion:
+                          type: string
+                          description: Descripción del permiso solicitado
+                        permiso_categoria:
+                          type: string
+                          enum: [Desarrollo, Infrastructura, Pruebas, Agile]
+                          description: Categoría del permiso solicitado
+                        estado:
+                          type: string
+                          enum: [pendiente, aprobado, rechazado]
+                          description: Estado actual de la solicitud
+                        fecha_solicitud:
+                          type: string
+                          format: date-time
+                          description: Fecha de creación de la solicitud
+                        fecha_respuesta:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          description: Fecha de respuesta del líder a la solicitud
+                        procesado_por:
+                          type: string
+                          nullable: true
+                          description: Nombre del personal TI que procesó la solicitud
+                        especialidad_ti:
+                          type: string
+                          nullable: true
+                          description: Especialidad del personal TI que procesó la solicitud
+                        observaciones_ti:
+                          type: string
+                          nullable: true
+                          description: Observaciones del personal TI sobre la solicitud
+
+                required:
+                  - success
+        "400":
+          description: Solicitud mal formada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+  /lideres/{id}/equipos/solicitudes:
+    get:
+      tags: [Líderes]
+      summary: Obtener todas las solicitudes de equipos de un líder
+      description: Retorna solicitudes de equipos realizadas por un líder específico
+      parameters:
+        - $ref: "#/components/parameters/ParamsLideresSolicitudes"
+      responses:
+        "200":
+          description: Lista de solicitudes de equipos del líder
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tipo_solicitud:
+                          type: string
+                          enum: [equipos]
+                          description: Tipo de solicitud (equipos)
+                        solicitud_id:
+                          type: integer
+                          format: int64
+                          description: ID de la solicitud de equipo
+                        usuario_id:
+                          type: integer
+                          format: int64
+                          description: ID del usuario al que se le solicita el equipo
+                        usuario_nombre:
+                          type: string
+                          description: Nombre del usuario al que se le solicita el equipo
+                        usuario_email:
+                          type: string
+                          format: email
+                          description: Email del usuario al que se le solicita el equipo
+                        usuario_area:
+                          type: string
+                          description: Área del usuario al que se le solicita el equipo
+                        usuario_rol:
+                          type: string
+                          description: Rol del usuario al que se le solicita el equipo
+                        equipo_id:
+                          type: integer
+                          format: int64
+                          description: ID del equipo solicitado
+                        equipo_tipo:
+                          type: string
+                          enum: [laptop, desktop]
+                          description: Tipo de equipo solicitado
+                        equipoc_marca:
+                          type: string
+                          description: Marca del equipo solicitado
+                        equipo_modelo:
+                          type: string
+                          description: Modelo del equipo solicitado
+                        numero_serie:
+                          type: string
+                          description: Número de serie del equipo solicitado
+                        procesador:
+                          type: string
+                          description: Procesador del equipo solicitado
+                          nullable: true
+                        ram:
+                          type: string
+                          description: Memoria RAM del equipo solicitado
+                          nullable: true
+                        almacenamiento:
+                          type: string
+                          description: Almacenamiento del equipo solicitado
+                          nullable: true
+                        sistema_operativo:
+                          type: string
+                          description: Sistema operativo del equipo solicitado
+                          nullable: true
+                        estado_equipo:
+                          type: string
+                          enum: [disponible, asignado, mantenimiento]
+                          description: Estado actual del equipo solicitado
+                        estado:
+                          type: string
+                          enum: [pendiente, aprobado, rechazado]
+                          description: Estado actual de la solicitud
+                        fecha_solicitud:
+                          type: string
+                          format: date-time
+                          description: Fecha de creación de la solicitud de equipo
+                        fecha_respuesta:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          description: Fecha de respuesta del líder a la solicitud
+                        procesado_por:
+                          type: string
+                          nullable: true
+                          description: Nombre del personal TI que procesó la solicitud
+                        especialidad_ti:
+                          type: string
+                          nullable: true
+                          description: Especialidad del personal TI que procesó la solicitud
+                        observaciones_ti:
+                          type: string
+                          nullable: true
+                          description: Observaciones del personal TI sobre la solicitud
+        "404":
+          description: No se encontraron solicitudes del líder con el ID especificado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+        "500":
+          description: Error interno del servidor al procesar la solicitud
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+
+  # =============================================
+  # PERSONAL TI
+  # =============================================
+  /ti/{tipo_solicitud}/solicitudes:
+    get:
+      tags: [Personal TI]
+      summary: Obtener todas las solicitudes por tipo
+      description: Retorna todas las solicitudes del tipo especificado (usuarios, accesos, equipos) para ser procesadas por el personal TI
+      parameters:
+        - name: tipo_solicitud
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [usuarios, accesos, equipos]
+          description: Tipo de solicitudes a consultar
+      responses:
+        "200":
+          description: Lista de solicitudes del tipo especificado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        lider_id:
+                          type: integer
+                          format: int64
+                          description: ID del líder que solicita la creación del usuario
+                        lider_nombre:
+                          type: string
+                          description: Nombre del líder que solicita la creación del usuario
+                        lider_area:
+                          type: string
+                          description: Área del líder que solicita la creación del usuario
+                        tipo_solicitud:
+                          type: string
+                          enum: [usuarios, accesos, equipos]
+                          description: Tipo de solicitud
+                        solicitud_id:
+                          type: integer
+                          format: int64
+                          description: ID de la solicitud de usuario
+                        beneficiario_id:
+                          type: integer
+                          format: int64
+                          description: ID del usuario beneficiario de la solicitud
+                        beneficiario_nombre:
+                          type: string
+                          description: Nombre del usuario beneficiario de la solicitud
+                        beneficiario_email:
+                          type: string
+                          format: email
+                          description: Email del usuario beneficiario de la solicitud
+                        beneficiario_area:
+                          type: string
+                          description: Área del usuario beneficiario de la solicitud
+                        beneficiario_rol:
+                          type: string
+                          description: Rol del usuario beneficiario de la solicitud
+                        estado:
+                          type: string
+                          enum: [pendiente, aprobado, rechazado]
+                          description: Estado actual de la solicitud
+                        fecha_solicitud:
+                          type: string
+                          format: date-time
+                          description: Fecha de creación de la solicitud
+                        fecha_respuesta:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          description: Fecha de respuesta del personal TI a la solicitud
+                        procesado_por_ti_id:
+                          type: integer
+                          format: int64
+                          nullable: true
+                          description: ID del personal TI que procesó la solicitud
+                        procesado_por_ti:
+                          type: string
+                          nullable: true
+                          description: Nombre del personal TI que procesó la solicitud
+                        especialidad_ti:
+                          type: string
+                          nullable: true
+                          description: Especialidad del personal TI que procesó la solicitud
+                        observaciones_ti:
+                          type: string
+                          nullable: true
+                          description: Observaciones del personal TI sobre la solicitud
+                required:
+                  - success
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+        "404":
+          description: No se encontraron solicitudes del tipo especificado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+
+  /ti/user/{id}:
+    get:
+      tags: [Personal TI]
+      summary: Obtener detalles de un usuario de TI por ID
+      description: Retorna los detalles de un usuario de TI específico
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: ID del usuario a consultar
+      responses:
+        "200":
+          description: Detalles del usuario encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        format: int64
+                        description: ID del usuario
+                      nombre:
+                        type: string
+                        description: Nombre del usuario
+                      email:
+                        type: string
+                        format: email
+                        description: Email del usuario
+                      especialidad:
+                        type: string
+                        description: Especialidad del usuario en el área de TI
+                      activo:
+                        type: boolean
+                        description: Indica si el usuario está activo
+                      fecha_creacion:
+                        type: string
+                        format: date-time
+                        description: Fecha de creación del usuario en el sistema
+                required:
+                  - success
+        "404":
+          description: Usuario no encontrado con el ID especificado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+        "500":
+          description: Error interno del servidor al procesar la solicitud
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+
+  /ti/solicitudes/{tipo_solicitud}/{id}:
+    patch:
+      tags: [Personal TI]
+      summary: Procesar solicitud de usuario, acceso o equipo
+      description: Permite al personal TI aprobar o rechazar una solicitud de usuario, acceso o equipo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: ID de la solicitud de usuario a procesar
+        - name: tipo_solicitud
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [usuarios, accesos, equipos]
+          description: Tipo de solicitud a procesar (usuarios, accesos, equipos)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                estado:
+                  type: string
+                  enum: [aprobado, rechazado]
+                  description: Estado final de la solicitud (aprobado o rechazado)
+                fecha_respuesta:
+                  type: string
+                  format: date-time
+                  description: Fecha y hora de la respuesta del personal TI
+                  nullable: true
+                procesado_por_ti_id:
+                  type: integer
+                  format: int64
+                  description: ID del personal TI que procesa la solicitud
+                observaciones_ti:
+                  type: string
+                  nullable: true
+                  description: Observaciones del personal TI sobre la solicitud
+              required:
+                - estado
+      responses:
+        "204":
+          description: Solicitud procesada exitosamente
+        "400":
+          description: Solicitud mal formada o datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+        "404":
+          description: Solicitud no encontrada con el ID especificado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+        "500":
+          description: Error interno del servidor al procesar la solicitud
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+
+  # =============================================
+  # USUARIOS
+  # =============================================
+  /usuarios:
+    post:
+      tags: [Usuarios]
+      summary: Crear un nuevo usuario
+      description: Registra un nuevo colaborador en el sistema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                  description: Nombre completo del usuario
+                email:
+                  type: string
+                  format: email
+                  description: Email del usuario
+                area:
+                  type: string
+                  description: Área del usuario
+                rol:
+                  type: string
+                  description: Rol del usuario en la empresa
+                lider_solicitante_id:
+                  type: integer
+                  description: ID del líder que solicita la creación
+              required:
+                - nombre
+                - email
+                - area
+                - rol
+                - lider_solicitante_id
+      responses:
+        "204":
+          description: Usuario creado exitosamente
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+  /usuarios/{id_lider}/{estado}:
+    get:
+      tags: [Usuarios]
+      summary: Obtener usuarios por estado
+      description: Retorna los usuarios filtrados por estado (pendiente, aprobado, rechazado)
+      parameters:
+        - name: id_lider
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: ID del líder que solicita la consulta
+        - name: estado
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [pendiente, aprobado, rechazado]
+          description: Estado de los usuarios a consultar
+      responses:
+        "200":
+          description: Lista de usuarios filtrados por estado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          format: int64
+                          description: ID del usuario
+                        nombre:
+                          type: string
+                          description: Nombre del usuario
+                        email:
+                          type: string
+                          format: email
+                          description: Email del usuario
+                        area:
+                          type: string
+                          description: Área del usuario
+                        rol:
+                          type: string
+                          description: Rol del usuario en la empresa
+                        estado:
+                          type: string
+                          enum: [pendiente, aprobado, rechazado]
+                          description: Estado actual del usuario
+                        fecha_creacion:
+                          type: string
+                          format: date-time
+                          description: Fecha de creación del usuario en el sistema
+                        fecha_respuesta:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          description: Fecha de respuesta del líder a la solicitud
+                        lider_solicitante_id:
+                          type: integer
+                          format: int64
+                          description: ID del líder que solicitó la creación del usuario
+                        aprobado_por_ti_id:
+                          type: integer
+                          nullable: true
+                          description: ID del personal TI que aprobó la solicitud
+                        observaciones_ti:
+                          type: string
+                          nullable: true
+                          description: Observaciones del personal TI sobre la solicitud
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+
+  # =============================================
+  # PERMISOS
+  # =============================================
+  /permisos/solicitudes/accesos/{id}:
+    get:
+      tags: [Permisos]
+      summary: Obtener detalles de un permiso por ID de una solicitud de accesos
+      description: Retorna los detalles de un permiso específico de una solicitud de accesos
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: ID de la solicitud de acceso a consultar
+      responses:
+        "200":
+          description: Detalles del permiso encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        format: int64
+                        description: ID del permiso
+                      nombre:
+                        type: string
+                        description: Nombre del permiso
+                      descripcion:
+                        type: string
+                        description: Descripción del permiso
+                      categoria:
+                        type: string
+                        enum: [Desarrollo, Infrastructura, Pruebas, Agile]
+                        description: Categoría del permiso
+                      activo:
+                        type: boolean
+                        description: Indica si el permiso está activo
+                      fecha_creacion:
+                        type: string
+                        format: date-time
+                        description: Fecha de creación del permiso en el sistema
+                required:
+                  - success
+        "404":
+          description: Permiso no encontrado con el ID especificado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+        "500":
+          description: Error interno del servidor al procesar la solicitud
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+
+  /permisos/solicitudes:
+    post:
+      tags: [Permisos]
+      summary: Solicitar permisos
+      description: Permite a un líder solicitar permisos para un usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                usuario_id:
+                  type: integer
+                  format: int64
+                  description: ID del usuario al que se le solicitan los permisos
+                permiso_id:
+                  type: integer
+                  format: int64
+                  description: ID del permiso a solicitar
+                lider_solicitante_id:
+                  type: integer
+                  format: int64
+                  description: ID del líder que solicita los permisos
+              required:
+                - usuario_id
+                - permiso_id
+                - lider_solicitante_id
+      responses:
+        "204":
+          description: Permisos solicitados exitosamente
+        "400":
+          description: Solicitud mal formada o datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+  /permisos/{categoria}:
+    get:
+      tags: [Permisos]
+      summary: Obtener permisos por categoría
+      description: Retorna los permisos disponibles para una categoría específica
+      parameters:
+        - name: categoria
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [Desarrollo, Infrastructura, Pruebas, Agile]
+          description: Categoría de permisos a consultar
+      responses:
+        "200":
+          description: Lista de permisos de la categoría solicitada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          format: int64
+                          description: ID del permiso
+                        nombre:
+                          type: string
+                          description: Nombre del permiso
+                        descripcion:
+                          type: string
+                          description: Descripción del permiso
+                        categoria:
+                          type: string
+                          enum: [Desarrollo, Infrastructura, Pruebas, Agile]
+                          description: Categoría del permiso
+                        activo:
+                          type: boolean
+                          description: Indica si el permiso está activo
+                        fecha_creacion:
+                          type: string
+                          format: date-time
+                          description: Fecha de creación del permiso
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+
+  # =============================================
+  # EQUIPOS
+  # =============================================
+  /equipos/{estado}:
+    get:
+      tags: [Equipos]
+      summary: Obtener equipos por estado
+      description: Retorna los equipos filtrados por estado (disponible, asignado, mantenimiento)
+      parameters:
+        - name: estado
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [disponible, asignado, mantenimiento]
+          description: Estado de los equipos a consultar
+      responses:
+        "200":
+          description: Lista de equipos filtrados por estado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          format: int64
+                          description: ID del equipo
+                        tipo:
+                          type: string
+                          enum: [laptop, desktop]
+                          description: Tipo de equipo
+                        marca:
+                          type: string
+                          description: Marca del equipo
+                        modelo:
+                          type: string
+                          description: Modelo del equipo
+                        numero_serie:
+                          type: string
+                          description: Número de serie del equipo
+                        procesador:
+                          type: string
+                          description: Procesador del equipo
+                          nullable: true
+                        ram:
+                          type: string
+                          description: Memoria RAM del equipo
+                          nullable: true
+                        almacenamiento:
+                          type: string
+                          description: Almacenamiento del equipo
+                          nullable: true
+                        sistema_operativo:
+                          type: string
+                          description: Sistema operativo del equipo
+                          nullable: true
+                        estado:
+                          type: string
+                          enum: [disponible, asignado, mantenimiento]
+                          description: Estado actual del equipo
+                        fecha_adquisicion:
+                          type: string
+                          format: date-time
+                          description: Fecha de adquisición del equipo
+                          nullable: true
+                        Observaciones:
+                          type: string
+                          description: Observaciones sobre el estado del equipo
+                          nullable: true
+                        fecha_creacion:
+                          type: string
+                          format: date-time
+                          description: Fecha de creación del registro del equipo
+                required:
+                  - success
+        "404":
+          description: No se encontraron equipos con el estado especificado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+        "500":
+          description: Error interno del servidor al procesar la solicitud
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+
+  /equipos/solicitudes:
+    post:
+      tags: [Equipos]
+      summary: Solicitar un equipo
+      description: Permite a un líder solicitar un equipo para un usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                usuario_id:
+                  type: integer
+                  format: int64
+                  description: ID del usuario al que se le solicita el equipo
+                equipo_id:
+                  type: integer
+                  format: int64
+                  description: ID del equipo solicitado
+                lider_solicitante_id:
+                  type: integer
+                  format: int64
+                  description: ID del líder que solicita el equipo
+              required:
+                - usuario_id
+                - equipo_id
+                - lider_solicitante_id
+      responses:
+        "204":
+          description: Solicitud de equipo creada exitosamente
+        "400":
+          description: Solicitud mal formada o datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+        "500":
+          description: Error interno del servidor al procesar la solicitud
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+
+  /equipos/solicitudes/{id}/detalle:
+    get:
+      tags: [Equipos]
+      summary: Obtener detalles de una solicitud de equipo por ID
+      description: Retorna los detalles de una solicitud de equipo específica
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: ID de la solicitud de equipo a consultar
+      responses:
+        "200":
+          description: Detalles de la solicitud de equipo encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        format: int64
+                        description: ID del equipo solicitado
+                      tipo:
+                        type: string
+                        enum: [laptop, desktop]
+                        description: Tipo de equipo solicitado
+                      marca:
+                        type: string
+                        description: Marca del equipo solicitado
+                      modelo:
+                        type: string
+                        description: Modelo del equipo solicitado
+                      numero_serie:
+                        type: string
+                        description: Número de serie del equipo solicitado
+                      procesador:
+                        type: string
+                        description: Procesador del equipo solicitado
+                        nullable: true
+                      ram:
+                        type: string
+                        description: Memoria RAM del equipo solicitado
+                        nullable: true
+                      almacenamiento:
+                        type: string
+                        description: Almacenamiento del equipo solicitado
+                        nullable: true
+                      sistema_operativo:
+                        type: string
+                        description: Sistema operativo del equipo solicitado
+                        nullable: true
+                      estado:
+                        type: string
+                        enum: [disponible, asignado, mantenimiento]
+                        description: Estado actual del equipo solicitado
+                      fecha_adquisicion:
+                        type: string
+                        format: date-time
+                        description: Fecha de adquisición del equipo solicitado
+                        nullable: true
+                      observaciones:
+                        type: string
+                        description: Observaciones sobre el estado del equipo solicitado
+                        nullable: true
+                      fecha_creacion:
+                        type: string
+                        format: date-time
+                        description: Fecha de creación del registro de la solicitud de equipo
+                required:
+                  - success
+        "404":
+          description: Solicitud de equipo no encontrada con el ID especificado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+        "500":
+          description: Error interno del servidor al procesar la solicitud
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+  # =============================================
+  # SOLICITUDES
+  # =============================================
+  /solicitudes/equipos/{idEquipo}:
+    get:
+      tags: [Solicitudes]
+      summary: Obtener solicitudes de equipos por ID de solicitud
+      description: Retorna las solicitudes de equipos asociadas a un ID de solicitud específico
+      parameters:
+        - name: idEquipo
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: ID del equipo
+      responses:
+        "200":
+          description: Solicitudes del equipo encontradas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        total_conflictos:
+                          type: integer
+                          format: int64
+                          description: Total de solicitudes de conflicto para el equipo
+                        solicitudes_conflictivas:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              solicitud_id:
+                                type: integer
+                                format: int64
+                                description: ID de la solicitud de equipo conflictiva
+                required:
+                  - success
+        "404":
+          description: No se encontraron solicitudes para el ID de equipo especificado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+        "500":
+          description: Error interno del servidor al procesar la solicitud
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+  # =============================================
+  # HISTORIAL
+  # =============================================
+
+  /historial/asignaciones/equipos/{id}:
+    get:
+      tags: [Historial]
+      summary: Obtener historial de asignaciones de equipos por ID
+      description: Retorna el historial de asignaciones de un equipo específico
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          description: ID del equipo a consultar
+      responses:
+        "200":
+          description: Historial de asignaciones encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indica si la operación fue exitosa
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          format: int64
+                          description: ID de la asignación del equipo
+                        equipo_id:
+                          type: integer
+                          format: int64
+                          description: ID del equipo asignado
+                        usuario_id:
+                          type: integer
+                          format: int64
+                          description: ID del usuario al que se le asignó el equipo
+                        usuario_nombre:
+                          type: string
+                          description: Nombre del usuario al que se le asignó el equipo
+                        usuario_email:
+                          type: string
+                          format: email
+                          description: Email del usuario al que se le asignó el equipo
+                        accion:
+                          type: string
+                          enum: [asignado, devuelto, mantenimiento, baja]
+                          description: Acción realizada en el historial (asignado, devuelto, mantenimiento, baja)
+                        fecha_accion:
+                          type: string
+                          format: date-time
+                          description: Fecha y hora de la acción realizada en el historial
+                        fecha_devolucion:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          description: Fecha y hora de la devolución del equipo, si aplica
+                        observaciones:
+                          type: string
+                          nullable: true
+                          description: Observaciones sobre la asignación del equipo
+                        ejecutado_por_ti_id:
+                          type: integer
+                          format: int64
+                          nullable: true
+                          description: ID del personal TI que ejecutó la acción
+        "404":
+          description: Historial de asignaciones no encontrado con el ID especificado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs400"
+        "500":
+          description: Error interno del servidor al procesar la solicitud
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rs500"
+components:
+  parameters:
+    ParamsLideresSolicitudes:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      description: ID único del recurso
+
+  schemas:
+    RsLideresSolicitudes:
+      type: object
+      properties:
+        tipo_solicitud:
+          type: string
+          enum: [usuarios, accesos, equipos]
+          description: Tipo de solicitud
+        id:
+          type: integer
+          format: int64
+          description: ID de la solicitud
+        nombre:
+          type: string
+          description: Nombre del usuario para quien se solicita
+        email:
+          type: string
+          format: email
+          description: Email del usuario
+        area:
+          type: string
+          description: Area del usuario
+        rol:
+          type: string
+          description: rol del usuario
+        estado:
+          type: string
+          enum: [pendiente, aprobado, rechazado]
+        fecha_solicitud:
+          type: string
+          format: date-time
+          nullable: true
+        fecha_respuesta:
+          type: string
+          format: date-time
+          nullable: true
+        procesado_por:
+          type: string
+          nullable: true
+          description: Nombre del personal TI que procesó
+        especialidad_ti:
+          type: string
+          nullable: true
+          description: Especialidad del personal TI que procesó
+        observaciones_ti:
+          type: string
+          nullable: true
+          description: Observaciones del personal TI
+    Rs500:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indica si la operación fue exitosa
+        message:
+          type: string
+          description: Descripción del error
+      example:
+        success: false
+        message: "Error inesperado en el servidor"
+    Rs400:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indica si la operación fue exitosa
+        message:
+          type: string
+          description: Descripción del error de validación o solicitud
+      example:
+        success: false
+        message: "La solicitud es inválida. Verifique los datos enviados."

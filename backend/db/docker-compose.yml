@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres_local
+    restart: unless-stopped
+    
+    environment:
+      POSTGRES_DB: myapp_dev
+      POSTGRES_USER: developer
+      POSTGRES_PASSWORD: dev_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    
+    ports:
+      - "5432:5432"
+    
+    volumes:
+      # Persistencia de datos
+      - postgres_data:/var/lib/postgresql/data
+      # Scripts de inicialización (opcional)
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    
+    networks:
+      - app_network
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U developer -d myapp_dev"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Servicio opcional para administración
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin_local
+    restart: unless-stopped
+    
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local.dev
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    
+    ports:
+      - "8080:80"
+    
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    
+    networks:
+      - app_network
+    
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  app_network:
+    driver: bridge
