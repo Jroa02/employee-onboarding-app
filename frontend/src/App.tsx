@@ -2,6 +2,7 @@ import "./App.css";
 import { useState } from "react";
 import { Routes, Route, useLocation, Link } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
+import RecentRequests from "./components/RecentRequests";
 import Usuarios from "./users/pages/Usuarios";
 import Accesos from "./access/pages/Accesos";
 import Computadores from "./computers/pages/Computadores";
@@ -9,13 +10,16 @@ import Aprobaciones from "./approvals/pages/Aprobaciones";
 
 // Home component
 const Home = () => (
-  <div className="text-center">
-    <h1 className="text-3xl font-bold text-gray-800 mb-4">
-      Gestión de Nuevos Colaboradores
-    </h1>
-    <p className="text-gray-600">
-      Bienvenido al sistema de gestión de nuevos colaboradores
-    </p>
+  <div>
+    <div className="text-center mb-8">
+      <h1 className="text-3xl font-bold text-gray-800 mb-4">
+        Gestión de Nuevos Colaboradores
+      </h1>
+      <p className="text-gray-600">
+        Bienvenido al sistema de gestión de nuevos colaboradores
+      </p>
+    </div>
+    <RecentRequests />
   </div>
 );
 
